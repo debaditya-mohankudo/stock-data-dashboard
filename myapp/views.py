@@ -3,6 +3,7 @@ from django.contrib import messages
 import yfinance as yf
 from datetime import datetime, timedelta
 from .models import Stock
+from django.http import JsonResponse
 
 # Create your views here.
 
@@ -70,3 +71,35 @@ def fetch_stock(request):
         
         return redirect('home')
     return redirect('home')
+
+def get_period_data(request):
+    ticker = request.GET.get('ticker', '').upper()
+    period = request.GET.get('period', '1y')
+
+    if not ticker:
+        return JsonResponse({'error': 'Ticker is required'}, status=400)
+
+    period_days = {
+        '1y': 365,
+        '2y': 730,
+        '5y': 1825
+    }.get(period, 365)
+
+    end_date = datetime.now()
+    start_date = end_date - timedelta(days=period_days)
+
+    stocks = Stock.objects.filter(ticker__iexact=ticker, date__range=(start_date, end_date)).order_by('date')
+
+    data = [
+        {
+            'date': stock.date.strftime('%Y-%m-%d'),
+            'open': stock.open_price,
+            'close': stock.close_price,
+            'high': stock.high_price,
+            'low': stock.low_price,
+            'volume': stock.volume
+        }
+        for stock in stocks
+    ]
+
+    return JsonResponse(data, safe=False)

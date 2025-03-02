@@ -129,10 +129,11 @@
     <div class="container">
         <h1>Stock Data Dashboard</h1>
         
-        <div class="stock-input">
+        <div class="input-section">
+            <h2>Add New Stock</h2>
             <form method="POST" action="{% url 'fetch_stock' %}" style="display: flex; gap: 10px; justify-content: center; align-items: center;">
                 {% csrf_token %}
-                <input type="text" name="stock_symbol" placeholder="Enter stock symbol (e.g., TCS.NS)" required style="padding: 10px; border-radius: 4px; border: 1px solid #ddd;">
+                <input type="text" name="stock_symbol" placeholder="Enter stock symbol (e.g., TCS.NS)" required style="padding: 10px; border-radius: 4px; border: 1px solid #ddd; flex: 1;">
                 <select name="period" style="padding: 10px; border-radius: 4px; border: 1px solid #ddd;">
                     <option value="1y">1 Year</option>
                     <option value="2y">2 Years</option>
@@ -143,84 +144,92 @@
         </div>
 
         {% if stocks_by_ticker %}
-        <div class="stock-selector">
-            <select id="stockSelect" onchange="showStock(this.value)">
-                <option value="">Select a stock</option>
-                {% for ticker in tickers %}
-                <option value="{{ ticker }}">{{ ticker }}</option>
-                {% endfor %}
-            </select>
-        </div>
-
-        {% for ticker, stocks in stocks_by_ticker.items %}
-        <div id="{{ ticker }}-data" class="stock-data" style="display: none;">
-            {% with latest=stocks.0 %}
-            <div class="stock-info">
-                <div class="stock-header">
-                    <div class="stock-name">{{ ticker }}</div>
-                    <div class="stock-price {% if latest.close_price > latest.open_price %}positive{% elif latest.close_price < latest.open_price %}negative{% endif %}">
-                        ₹{{ latest.close_price|floatformat:2 }}
-                        {% with change=latest.close_price|subtract:latest.open_price %}
-                        <span style="font-size: 18px;">({{ change|floatformat:2 }})</span>
-                        {% endwith %}
-                    </div>
-                </div>
-                <div class="stock-details">
-                    <div class="detail-card">
-                        <div class="detail-label">Open</div>
-                        <div class="detail-value">₹{{ latest.open_price|floatformat:2 }}</div>
-                    </div>
-                    <div class="detail-card">
-                        <div class="detail-label">High</div>
-                        <div class="detail-value">₹{{ latest.high_price|floatformat:2 }}</div>
-                    </div>
-                    <div class="detail-card">
-                        <div class="detail-label">Low</div>
-                        <div class="detail-value">₹{{ latest.low_price|floatformat:2 }}</div>
-                    </div>
-                    <div class="detail-card">
-                        <div class="detail-label">Volume</div>
-                        <div class="detail-value">{{ latest.volume|intcomma }}</div>
-                    </div>
-                </div>
-            </div>
-            {% endwith %}
-
-            <div class="chart-container">
-                <canvas id="{{ ticker }}-chart"></canvas>
-            </div>
-            
-            <table id="{{ ticker }}-table">
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Open</th>
-                        <th>High</th>
-                        <th>Low</th>
-                        <th>Close</th>
-                        <th>Change</th>
-                        <th>Volume</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for stock in stocks %}
-                    <tr>
-                        <td class="date">{{ stock.date|date:"Y-m-d" }}</td>
-                        <td class="price">₹{{ stock.open_price|floatformat:2 }}</td>
-                        <td class="price">₹{{ stock.high_price|floatformat:2 }}</td>
-                        <td class="price">₹{{ stock.low_price|floatformat:2 }}</td>
-                        <td class="price">₹{{ stock.close_price|floatformat:2 }}</td>
-                        <td class="price {% if stock.close_price > stock.open_price %}positive{% elif stock.close_price < stock.open_price %}negative{% endif %}">
-                            ₹{{ stock.close_price|subtract:stock.open_price|floatformat:2 }}
-                            ({{ stock.close_price|subtract:stock.open_price|divide:stock.open_price|multiply:100|floatformat:2 }}%)
-                        </td>
-                        <td class="volume">{{ stock.volume|intcomma }}</td>
-                    </tr>
+        <div class="output-section">
+            <h2>Stock Data Viewer</h2>
+            <div class="stock-selector">
+                <select id="stockSelect" onchange="showStock(this.value)">
+                    <option value="">Select a stock</option>
+                    {% for ticker in tickers %}
+                    <option value="{{ ticker }}">{{ ticker }}</option>
                     {% endfor %}
-                </tbody>
-            </table>
+                </select>
+                <select id="periodSelect" onchange="updatePeriod()">
+                    <option value="1y">1 Year</option>
+                    <option value="2y">2 Years</option>
+                    <option value="5y">5 Years</option>
+                </select>
+            </div>
+
+            {% for ticker, stocks in stocks_by_ticker.items %}
+            <div id="{{ ticker }}-data" class="stock-data" style="display: none;">
+                {% with latest=stocks.0 %}
+                <div class="stock-info">
+                    <div class="stock-header">
+                        <div class="stock-name">{{ ticker }}</div>
+                        <div class="stock-price {% if latest.close_price > latest.open_price %}positive{% elif latest.close_price < latest.open_price %}negative{% endif %}">
+                            ₹{{ latest.close_price|floatformat:2 }}
+                            {% with change=latest.close_price|subtract:latest.open_price %}
+                            <span style="font-size: 18px;">({{ change|floatformat:2 }})</span>
+                            {% endwith %}
+                        </div>
+                    </div>
+                    <div class="stock-details">
+                        <div class="detail-card">
+                            <div class="detail-label">Open</div>
+                            <div class="detail-value">₹{{ latest.open_price|floatformat:2 }}</div>
+                        </div>
+                        <div class="detail-card">
+                            <div class="detail-label">High</div>
+                            <div class="detail-value">₹{{ latest.high_price|floatformat:2 }}</div>
+                        </div>
+                        <div class="detail-card">
+                            <div class="detail-label">Low</div>
+                            <div class="detail-value">₹{{ latest.low_price|floatformat:2 }}</div>
+                        </div>
+                        <div class="detail-card">
+                            <div class="detail-label">Volume</div>
+                            <div class="detail-value">{{ latest.volume|intcomma }}</div>
+                        </div>
+                    </div>
+                </div>
+                {% endwith %}
+
+                <div class="chart-container">
+                    <canvas id="{{ ticker }}-chart"></canvas>
+                </div>
+                
+                <table id="{{ ticker }}-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Open</th>
+                            <th>High</th>
+                            <th>Low</th>
+                            <th>Close</th>
+                            <th>Change</th>
+                            <th>Volume</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stock in stocks %}
+                        <tr>
+                            <td class="date">{{ stock.date|date:"Y-m-d" }}</td>
+                            <td class="price">₹{{ stock.open_price|floatformat:2 }}</td>
+                            <td class="price">₹{{ stock.high_price|floatformat:2 }}</td>
+                            <td class="price">₹{{ stock.low_price|floatformat:2 }}</td>
+                            <td class="price">₹{{ stock.close_price|floatformat:2 }}</td>
+                            <td class="price {% if stock.close_price > stock.open_price %}positive{% elif stock.close_price < stock.open_price %}negative{% endif %}">
+                                ₹{{ stock.close_price|subtract:stock.open_price|floatformat:2 }}
+                                ({{ stock.close_price|subtract:stock.open_price|divide:stock.open_price|multiply:100|floatformat:2 }}%)
+                            </td>
+                            <td class="volume">{{ stock.volume|intcomma }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endfor %}
         </div>
-        {% endfor %}
         {% else %}
         <p>No stock data available.</p>
         {% endif %}
@@ -390,6 +399,23 @@
                         createChart(ticker);
                     }
                 }
+            }
+        }
+
+        function updatePeriod() {
+            const ticker = document.getElementById('stockSelect').value;
+            const period = document.getElementById('periodSelect').value;
+            if (ticker) {
+                fetch(`/get-period-data/?ticker=${ticker}&period=${period}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        stockData[ticker] = data;
+                        if (charts[ticker]) {
+                            charts[ticker].destroy();
+                        }
+                        createChart(ticker);
+                        updateTable(ticker);
+                    });
             }
         }
 
