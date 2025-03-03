@@ -7,6 +7,16 @@ from .utils import fetch_and_save_stock_data
 
 # Create your views here.
 
+# Define allowed periods and their corresponding days
+ALLOWED_PERIODS = {
+    '1d': 1,
+    '1w': 7,
+    '6m': 182,
+    '1y': 365,
+    '2y': 730,
+    '5y': 1825
+}
+
 def home(request):
     stocks = Stock.objects.all().order_by('-date')
     stocks_by_ticker = {}
@@ -51,14 +61,7 @@ def get_period_data(request):
     if not ticker:
         return JsonResponse({'error': 'Ticker is required'}, status=400)
 
-    period_days = {
-        '1d': 1,
-        '1w': 7,
-        '6m': 182,
-        '1y': 365,
-        '2y': 730,
-        '5y': 1825
-    }.get(period, 365)
+    period_days = ALLOWED_PERIODS.get(period, 365)
 
     end_date = datetime.now()
     start_date = end_date - timedelta(days=period_days)
