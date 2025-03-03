@@ -15,17 +15,28 @@ def fetch_and_save_stock_data(ticker, start_date, end_date):
         # Delete existing data for this stock (case insensitive)
         Stock.objects.filter(ticker__iexact=ticker).delete()
 
-        # Save each row to the database
+        # Save each row to the database, avoiding duplicates
         for index, row in df.iterrows():
-            Stock.objects.create(
+            # Check if the record already exists
+            stock, created = Stock.objects.get_or_create(
                 ticker=ticker.upper(),
                 date=index.date(),
-                open_price=row['Open'],
-                high_price=row['High'],
-                low_price=row['Low'],
-                close_price=row['Close'],
-                volume=row['Volume']
+                defaults={
+                    'open_price': row['Open'],
+                    'high_price': row['High'],
+                    'low_price': row['Low'],
+                    'close_price': row['Close'],
+                    'volume': row['Volume']
+                }
             )
+            if not created:
+                # Update existing record if needed
+                stock.open_price = row['Open']
+                stock.high_price = row['High']
+                stock.low_price = row['Low']
+                stock.close_price = row['Close']
+                stock.volume = row['Volume']
+                stock.save()
 
         return True, f"Successfully fetched data for {ticker}"
     except Exception as e:
