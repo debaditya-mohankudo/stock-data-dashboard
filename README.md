@@ -7,6 +7,9 @@ A Django-based web application for visualizing and analyzing stock data from the
 ### 1. Stock Data Retrieval
 - Fetch historical stock data using stock symbols (e.g., TCS.NS, RELIANCE.NS)
 - Support for multiple time periods:
+  - 1 Day
+  - 1 Week
+  - 6 Months
   - 1 Year
   - 2 Years
   - 5 Years
@@ -16,7 +19,7 @@ A Django-based web application for visualizing and analyzing stock data from the
 - **Stock Selection**
   - Dropdown menu to switch between different stocks
   - Input field for fetching new stock data
-  - Period selector (1Y/2Y/5Y)
+  - Period selector (1D/1W/6M/1Y/2Y/5Y)
 
 - **Price Overview**
   - Latest stock price display

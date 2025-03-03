@@ -80,6 +80,9 @@ def get_period_data(request):
         return JsonResponse({'error': 'Ticker is required'}, status=400)
 
     period_days = {
+        '1d': 1,
+        '1w': 7,
+        '6m': 182,
         '1y': 365,
         '2y': 730,
         '5y': 1825

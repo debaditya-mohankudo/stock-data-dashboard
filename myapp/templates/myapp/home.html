@@ -135,6 +135,9 @@
                 {% csrf_token %}
                 <input type="text" name="stock_symbol" placeholder="Enter stock symbol (e.g., TCS.NS)" required style="padding: 10px; border-radius: 4px; border: 1px solid #ddd; flex: 1;">
                 <select name="period" style="padding: 10px; border-radius: 4px; border: 1px solid #ddd;">
+                    <option value="1d">1 Day</option>
+                    <option value="1w">1 Week</option>
+                    <option value="6m">6 Months</option>
                     <option value="1y">1 Year</option>
                     <option value="2y">2 Years</option>
                     <option value="5y">5 Years</option>
@@ -154,6 +157,9 @@
                     {% endfor %}
                 </select>
                 <select id="periodSelect" onchange="updatePeriod()">
+                    <option value="1d">1 Day</option>
+                    <option value="1w">1 Week</option>
+                    <option value="6m">6 Months</option>
                     <option value="1y">1 Year</option>
                     <option value="2y">2 Years</option>
                     <option value="5y">5 Years</option>
@@ -395,9 +401,17 @@
                 var selectedStock = document.getElementById(ticker + '-data');
                 if (selectedStock) {
                     selectedStock.style.display = 'block';
-                    if (!charts[ticker]) {
-                        createChart(ticker);
-                    }
+                    const period = document.getElementById('periodSelect').value;
+                    fetch(`/get-period-data/?ticker=${ticker}&period=${period}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            stockData[ticker] = data;
+                            if (charts[ticker]) {
+                                charts[ticker].destroy();
+                            }
+                            createChart(ticker);
+                            updateTable(ticker);
+                        });
                 }
             }
         }
