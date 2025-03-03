@@ -4,6 +4,10 @@ from datetime import datetime, timedelta
 from .models import Stock
 from django.http import JsonResponse
 from .utils import fetch_and_save_stock_data
+import logging
+
+# Set up logging
+logger = logging.getLogger(__name__)
 
 # Create your views here.
 
@@ -40,16 +44,46 @@ def fetch_stock(request):
         period = request.POST.get('period', '1y')
         
         try:
+            # Calculate start and end dates
+            end_date = datetime.now()
+            period_days = ALLOWED_PERIODS.get(period, 365)
+            start_date = end_date - timedelta(days=period_days)
+
             # Use the utility function to fetch and save data
-            success, message = fetch_and_save_stock_data(stock_symbol, period)
+            success, message = fetch_and_save_stock_data(stock_symbol, start_date, end_date)
 
             if not success:
                 messages.error(request, message)
+                logger.error(f"Error fetching data for {stock_symbol}: {message}")
                 return redirect('home')
 
             messages.success(request, f"Successfully fetched {period} of data for {stock_symbol}")
+            logger.info(f"Successfully fetched {period} of data for {stock_symbol}")
+
+            logger.debug(f"Fetched data for {stock_symbol}: {message}")
+
+            # Refresh the list of stock symbols
+            stocks = Stock.objects.all().order_by('-date')
+            logger.debug(f"Total stocks in database: {len(stocks)}")
+            stocks_by_ticker = {}
+            tickers = set()  # Using a set to avoid duplicates
+            
+            for stock in stocks:
+                ticker = stock.ticker.upper()  # Normalize to uppercase
+                if ticker not in stocks_by_ticker:
+                    stocks_by_ticker[ticker] = []
+                    tickers.add(ticker)
+                stocks_by_ticker[ticker].append(stock)
+
+            logger.debug(f"Updated tickers after fetching: {sorted(tickers)}")
+
+            return render(request, 'myapp/home.html', {
+                'stocks_by_ticker': stocks_by_ticker,
+                'tickers': sorted(tickers),  # Convert set to sorted list
+            })
         except Exception as e:
             messages.error(request, f"Error fetching data: {str(e)}")
+            logger.error(f"Exception occurred: {str(e)}")
         
         return redirect('home')
     return redirect('home')
